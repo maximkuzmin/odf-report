@@ -35,23 +35,26 @@ class Table
       return
     end
 
+    @cells = []
+
     if @inner_block
       @inner_block.call @collection, self
     else
       @collection.each{ |data_item| add_row(data_item) }
     end
-
     @template_rows.each_with_index do |r, i|
       r.remove if (get_start_node..template_length) === i
     end
   end # replace
 
 
-
-  def add_row(data_item, new_node = get_next_row )
+  def add_row(data_item, new_node = get_next_row)
     @tables.each    { |t| t.replace!(new_node, data_item) }
     @texts.each     { |t| t.replace!(new_node, data_item) }
     @fields.each    { |f| f.replace!(new_node, data_item) }
+
+    @cells.each    { |c| c.replace!(new_node, data_item) }
+    @cells = []
 
     @table.add_child(new_node)
   end
@@ -59,7 +62,8 @@ class Table
 
   def find_row(row_label)
     regexp = /#{Regexp.quote("{{#{row_label.upcase.to_s}}}")}/
-    row = @template_rows.find {|r| r.text =~ regexp }.dup || get_next_row
+    row = @template_rows.find {|r| r.text =~ regexp }.dup
+    raise ArgumentError, "row with label #{row_label} wasnt found" if row.nil?
     row.inner_html = row.inner_html.gsub!(regexp, '')
     row
   end

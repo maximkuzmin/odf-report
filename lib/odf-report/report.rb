@@ -34,8 +34,7 @@ class Report
     opts.merge!(:name => table_name, :collection => collection)
     tab = Table.new(opts)
     @tables << tab
-
-    yield(tab)
+    block_given? ? yield(tab) : tab
   end
 
   def add_section(section_name, collection, opts={})

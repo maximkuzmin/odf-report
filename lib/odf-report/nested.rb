@@ -33,6 +33,12 @@ module ODFReport
       yield(sec)
     end
 
+    def add_cell(cell_name, data_field=nil, value: nil, opts: {}, &block)
+      opts = {:name => cell_name, :data_field => data_field, value: value}
+      cell = Field.new(opts, &block)
+      @cells << cell
+    end
+
 
     def get_collection_from_item(item, collection_field)
 
