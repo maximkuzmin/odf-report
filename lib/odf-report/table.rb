@@ -14,44 +14,55 @@ class Table
 
     @template_rows = []
     @header           = opts[:header] || false
+    @header_length    = opts[:header_length] || 1
     @skip_if_empty    = opts[:skip_if_empty] || false
+    @inner_block      = opts[:inner_block]
   end
 
   def replace!(doc, row = nil)
 
-    return unless table = find_table_node(doc)
+    return unless @table = find_table_node(doc)
 
-    @template_rows = table.xpath("table:table-row")
+    @template_rows = @table.xpath("table:table-row")
 
-    @header = table.xpath("table:table-header-rows").empty? ? @header : false
+    @header = @table.xpath("table:table-header-rows").empty? ? @header : false
 
 
     @collection = get_collection_from_item(row, @collection_field) if row
 
     if @skip_if_empty && @collection.empty?
-      table.remove
+      @table.remove
       return
     end
 
-    @collection.each do |data_item|
-
-      new_node = get_next_row
-
-      @tables.each    { |t| t.replace!(new_node, data_item) }
-
-      @texts.each     { |t| t.replace!(new_node, data_item) }
-
-      @fields.each    { |f| f.replace!(new_node, data_item) }
-
-      table.add_child(new_node)
-
+    if @inner_block
+      @inner_block.call @collection, self
+    else
+      @collection.each{ |data_item| add_row(data_item) }
     end
 
     @template_rows.each_with_index do |r, i|
       r.remove if (get_start_node..template_length) === i
     end
-
   end # replace
+
+
+
+  def add_row(data_item, new_node = get_next_row )
+    @tables.each    { |t| t.replace!(new_node, data_item) }
+    @texts.each     { |t| t.replace!(new_node, data_item) }
+    @fields.each    { |f| f.replace!(new_node, data_item) }
+
+    @table.add_child(new_node)
+  end
+
+
+  def find_row(row_label)
+    regexp = /#{Regexp.quote("{{#{row_label.upcase.to_s}}}")}/
+    row = @template_rows.find {|r| r.text =~ regexp }.dup || get_next_row
+    row.inner_html = row.inner_html.gsub!(regexp, '')
+    row
+  end
 
 private
 
@@ -68,7 +79,7 @@ private
   end
 
   def get_start_node
-    @header ? 1 : 0
+    @header ? @header_length : 0
   end
 
   def template_length
