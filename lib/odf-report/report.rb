@@ -50,14 +50,6 @@ class Report
     @images[name] = path
   end
 
-  def add_complex_table(table_name, collection, opts={})
-    opts.merge!(:name => table_name, :collection => collection)
-    tab = Table.new(opts)
-    @tables << tab
-
-    yield(tab)
-  end
-
   def generate(dest = nil)
 
     @file.update_content do |file|
